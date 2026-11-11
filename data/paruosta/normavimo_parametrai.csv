@@ -1,0 +1,11 @@
+﻿rinkinys,pozymis,mediana,IQR
+visi,RR_sant_vid,0.9743,0.2357
+visi,RR_pre,719.4444,277.7778
+visi,RR_sant_post,0.9868,0.1901
+visi,QRS,108.3333,66.6667
+visi,QTc,503.6538,115.1546
+ritmo,RR_sant_vid,0.9743,0.2357
+ritmo,RR_pre,719.4444,277.7778
+ritmo,RR_sant_post,0.9868,0.1901
+formos,QRS,108.3333,66.6667
+formos,QTc,503.6538,115.1546
