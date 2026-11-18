@@ -8,10 +8,13 @@ from common import (META_FILE, SUBSAMPLES_FILE, coordinate_names,
                     draw_subsample, reduce_dimension, robust_scale,
                     space_file, stability_file)
 from config import (CLASS_COLUMN, CLASSES, CORRELATION_THRESHOLD,
-                    EXPECTED_OBJECTS, FEATURE_SETS, FEATURES, INPUT_FILE,
-                    MAIN_SET, META_COLUMNS, N_SUBSAMPLES, OUTLIER_COLUMN,
-                    PREPARED_DIR, RR_ERROR_COLUMN, RR_VID_ERROR_MS, SPACES,
-                    STABILITY_DIR, TSNE_RANDOM_STATE)
+                    EXPECTED_OBJECTS, EXPECTED_RR_ERRORS, FEATURE_SETS,
+                    FEATURES, INPUT_FILE, MAIN_SET, META_COLUMNS,
+                    N_SUBSAMPLES, OUTLIER_COLUMN, PREPARED_DIR,
+                    RR_VID_ERROR_MS, SPACES, STABILITY_DIR, TSNE_RANDOM_STATE)
+
+
+REMOVED_FILE = PREPARED_DIR / "pasalintos_klaidos.csv"
 
 
 def load_input():
@@ -26,16 +29,25 @@ def load_input():
     return data
 
 
-def mark_rr_errors(data):
+def remove_rr_errors(data):
     rr_vid = data["RR_pre"] / data["RR_sant_vid"]
-    data[RR_ERROR_COLUMN] = rr_vid > RR_VID_ERROR_MS
+    is_error = rr_vid > RR_VID_ERROR_MS
+    errors = data[is_error].assign(RR_vid=rr_vid[is_error].round(0))
 
-    errors = data[data[RR_ERROR_COLUMN]]
     print(f"\nRR_vid skaičiavimo klaidos (RR_vid > {RR_VID_ERROR_MS} ms): {len(errors)}")
-    print(errors[["id", "irasas", CLASS_COLUMN, "RR_pre", "RR_sant_vid"]]
-          .assign(RR_vid=rr_vid[errors.index].round(0)).to_string(index=False))
+    print(errors[["id", "irasas", CLASS_COLUMN, "RR_pre", "RR_sant_vid", "RR_vid"]]
+          .to_string(index=False))
+    assert len(errors) == EXPECTED_RR_ERRORS, \
+        f"Tikėtasi {EXPECTED_RR_ERRORS} klaidų, rasta {len(errors)}"
     assert errors[OUTLIER_COLUMN].all(), "Klaidos turi būti tarp ekstremalių išskirčių"
-    return data
+
+    errors.to_csv(REMOVED_FILE, index=False, encoding="utf-8-sig")
+
+    cleaned = data[~is_error].reset_index(drop=True)
+    print(f"Pašalinta {len(errors)}, liko {len(cleaned)} dūžiai, "
+          f"{cleaned[OUTLIER_COLUMN].sum()} pažymėtos ekstremalios išskirtys")
+    print(cleaned[CLASS_COLUMN].value_counts().reindex(CLASSES).to_string())
+    return cleaned
 
 
 def check_correlation(data):
@@ -132,7 +144,7 @@ def prepare_subsamples(data):
 def main():
     STABILITY_DIR.mkdir(parents=True, exist_ok=True)
 
-    data = mark_rr_errors(load_input())
+    data = remove_rr_errors(load_input())
     check_correlation(data)
     data[META_COLUMNS].to_csv(META_FILE, index=False)
 

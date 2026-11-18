@@ -10,13 +10,11 @@ STABILITY_DIR = PREPARED_DIR / "stabilumas"
 CLASS_COLUMN = "klase"
 CLASSES = ["N", "L", "R", "V", "A"]
 OUTLIER_COLUMN = "ekstremali_isskirtis"
-RR_ERROR_COLUMN = "rr_vid_klaida"
 
-META_COLUMNS = ["id", "irasas", "R", CLASS_COLUMN, "ritmas",
-                OUTLIER_COLUMN, RR_ERROR_COLUMN]
+META_COLUMNS = ["id", "irasas", "R", CLASS_COLUMN, "ritmas", OUTLIER_COLUMN]
 
-EXPECTED_OBJECTS = 4837
-
+EXPECTED_OBJECTS = 4837        
+EXPECTED_RR_ERRORS = 2        
 
 FEATURE_SETS = {
     "visi": ["RR_sant_vid", "RR_pre", "RR_sant_post", "QRS", "QTc"],
