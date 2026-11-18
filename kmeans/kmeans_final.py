@@ -1,24 +1,3 @@
-"""Galutiniai k-vidurkių modeliai ir jų palyginimas.
-
-Schemos 4, 6 ir 7 etapai:
-  4. Klasterizavimas pradinėje erdvėje – atskaitos suskirstymas (k = 3).
-  6. Klasterizavimas sumažintose erdvėse su jose parinktu k:
-     PCA (k = 3) ir t-SNE (k = 4). Papildomai t-SNE su k = 3, kad būtų
-     galima atskirti dimensijos mažinimo poveikį nuo kitokio k poveikio.
-  7. Vertinimas:
-     * vidiniai matai erdvėje, kurioje klasterizuota, ir pradinėje erdvėje;
-     * išoriniai matai (ARI, NMI, Jaccard) lyginant su atskaitos suskirstymu;
-     * sutampančių taškų skaičius (suporavus klasterius);
-     * stabilumas per 80 % imtis ir imčių pakankamumas (N = 5, 10, 15, 20).
-
-Klasterių numeriai suderinami su atskaitos suskirstymu (suporuoti klasteriai
-gauna tą patį numerį), kad visų erdvių grafikuose ta pati spalva reikštų
-tą patį klasterį. Žymės išsaugomos zymes.csv tolesnei interpretacijai.
-
-Paleidimas iš repozitorijos šaknies:
-    python kmeans/kmeans_final.py
-"""
-
 from kmeans_common import (ALGORITHM, CHOSEN_K, OUTPUT_DIR, RANDOM_STATE,
                            SPACE_NAMES, background_map, fit_kmeans,
                            plot_clusters, save_figure)
@@ -33,7 +12,6 @@ from common import load_space, load_subsample, subsample_seeds
 PARAMS = {"init": "k-means++", "n_init": 10, "atstumas": "euclidean"}
 
 REFERENCE = ("originali", CHOSEN_K["originali"])
-# (erdvė, k): kiekvienos erdvės parinktas k ir papildomas t-SNE su k = 3.
 RUNS = [REFERENCE,
         ("pca", CHOSEN_K["pca"]),
         ("tsne", CHOSEN_K["tsne"]),

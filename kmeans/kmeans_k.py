@@ -1,25 +1,3 @@
-"""k-vidurkių klasterių skaičiaus parinkimas kiekvienoje erdvėje.
-
-Kiekvienai erdvei (pradinė, PCA, t-SNE) ir k = 2, ..., 15 apskaičiuojami:
-  * E_k-means – kvadratinė paklaida, pagal kurią taikomas alkūnės metodas
-    (k = 1, ..., 15). Papildomai pateikiama ir skaidrių var(k) – klasterių
-    vidinių dispersijų suma. Ji nesvertinama klasterių dydžiais, todėl kai
-    k-vidurkiai išskiria mažą, labai išsibarsčiusį išskirčių klasterį, var(k)
-    didėjant k ne mažėja, o auga, ir alkūnės pagal ją nustatyti negalima;
-  * vidutinis siluetas – vidutinio silueto metodas;
-  * Calinski–Harabasz ir Davies–Bouldin indeksai – papildomi kriterijai;
-  * stabilumas – ARI vidurkis per 80 % imtis (stiprūs klasteriai išlieka
-    stabilūs, žr. paskaitos skaidres).
-Papildomai įvertinamas empyrinis k ≈ sqrt(m / 2).
-
-Kiekvienas bandymas įrašomas į eksperimentų žurnalą. Galutinį k kiekvienai
-erdvei parenkate patys pagal visus kriterijus kartu (žr. k_pasiulymai.csv
-ir grafikus).
-
-Paleidimas iš repozitorijos šaknies:
-    python kmeans/kmeans_k.py
-"""
-
 import time
 
 from kmeans_common import (ALGORITHM, OUTPUT_DIR, RANDOM_STATE, SPACE_NAMES,

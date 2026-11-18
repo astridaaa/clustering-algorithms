@@ -1,24 +1,3 @@
-"""k-vidurkių parametrų poveikis (pasirinktas k kiekvienoje erdvėje).
-
-Užduotis: „Kaip keičiasi rezultatai keičiant algoritmo parametrus
-(panašumo matai ir pan.)?“ Tiriami du dalykai:
-
-1. Panašumo (atstumo) matas. k-vidurkių centras yra vidurkis, kuris tinka
-   tik Euklido atstumui, todėl kiti Minkovskio grupės atstumai tiriami
-   k-medoidų metodu: Euklido, Manheteno (miesto kvartalų) ir Čebyševo.
-   Kiekvienas variantas lyginamas su įprastu k-vidurkių rezultatu toje pačioje
-   erdvėje (ARI, NMI, Jaccard) ir įvertinamas jo stabilumas per 80 % imtis.
-
-2. Pradinių centrų parinkimas. k-vidurkiai dažnai konverguoja į lokalųjį
-   minimumą, todėl algoritmą reikia vykdyti kelis kartus. Lyginami
-   k-means++ ir atsitiktinis pradinių centrų parinkimas, kai algoritmas
-   vykdomas 1 arba 10 kartų (n_init), su 10 skirtingų sėklų: kiek skiriasi
-   paklaida E_k-means ir ar gaunami tie patys klasteriai.
-
-Paleidimas iš repozitorijos šaknies:
-    python kmeans/kmeans_params.py
-"""
-
 from itertools import combinations
 
 from kmeans_common import (ALGORITHM, CHOSEN_K, OUTPUT_DIR, RANDOM_STATE,
@@ -38,9 +17,6 @@ BASE_VARIANT = "k-vidurkiai, Euklido"
 INIT_METHODS = ["k-means++", "random"]
 N_INITS = [1, 10]
 INIT_SEEDS = range(10)
-
-
-# --- 1. Atstumo matas -------------------------------------------------------
 
 def variant_stability(space, variant, k):
     samples = {}
@@ -108,8 +84,6 @@ def plot_distances(results):
     fig.tight_layout()
     save_figure(fig, "parametrai_atstumai.png")
 
-
-# --- 2. Pradinių centrų parinkimas ------------------------------------------
 
 def compare_initialisation(space):
     ids, X = load_space(space)
