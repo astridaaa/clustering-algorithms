@@ -51,13 +51,13 @@ def robust_scale(X):
 
 
 def reduce_dimension(X_scaled, space, random_state):
-    """Projekcija į N_COMPONENTS dimensijų. 'originali' grąžina X be pakeitimų."""
+    """Projekcija į N_COMPONENTS[space] dimensijų. 'originali' grąžina X be pakeitimų."""
     if space == "originali":
         return X_scaled
     if space == "pca":
-        return PCA(n_components=N_COMPONENTS).fit_transform(X_scaled)
+        return PCA(n_components=N_COMPONENTS["pca"]).fit_transform(X_scaled)
     if space == "tsne":
-        model = TSNE(n_components=N_COMPONENTS, random_state=random_state,
+        model = TSNE(n_components=N_COMPONENTS["tsne"], random_state=random_state,
                      **TSNE_PARAMS)
         return model.fit_transform(X_scaled)
     raise ValueError(f"Nežinoma erdvė: {space}")
@@ -67,7 +67,7 @@ def coordinate_names(space, feature_set=MAIN_SET):
     if space == "originali":
         return FEATURE_SETS[feature_set]
     prefix = {"pca": "PC", "tsne": "tSNE"}[space]
-    return [f"{prefix}{i + 1}" for i in range(N_COMPONENTS)]
+    return [f"{prefix}{i + 1}" for i in range(N_COMPONENTS[space])]
 
 
 def draw_subsample(all_ids, seed):
