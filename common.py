@@ -4,8 +4,8 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 
 from config import (FEATURE_SETS, MAIN_SET, N_COMPONENTS, N_SUBSAMPLES,
-                    PREPARED_DIR, STABILITY_DIR, SUBSAMPLE_FRACTION,
-                    TSNE_PARAMS)
+                    PREPARED_DIR, PROJECTIONS_DIR, STABILITY_DIR,
+                    SUBSAMPLE_FRACTION, TSNE_PARAMS, TSNE_RANDOM_STATE)
 
 
 META_FILE = PREPARED_DIR / "meta.csv"
@@ -41,6 +41,27 @@ def load_subsample(space, seed, feature_set=MAIN_SET):
     data = pd.read_csv(stability_file(space, feature_set))
     sample = data[data["imtis"] == seed]
     return sample["id"].to_numpy(), sample.drop(columns=["imtis", "id"]).to_numpy()
+
+
+def load_projection(space):
+    if space == "originali":
+        return load_space("originali")
+    if space == "tsne2":
+        return load_space("tsne")
+    method, dim = space[:-1], int(space[-1])
+    ids, X = load_space("originali")
+    if method == "pca":
+        return ids, PCA(n_components=dim).fit_transform(X)
+    path = PROJECTIONS_DIR / f"{space}_{MAIN_SET}.csv"
+    if not path.exists():
+        model = TSNE(n_components=dim, random_state=TSNE_RANDOM_STATE,
+                     method="barnes_hut" if dim <= 3 else "exact", **TSNE_PARAMS)
+        table = pd.DataFrame(model.fit_transform(X), columns=[f"tSNE{i + 1}" for i in range(dim)])
+        table.insert(0, "id", ids)
+        PROJECTIONS_DIR.mkdir(parents=True, exist_ok=True)
+        table.to_csv(path, index=False, float_format="%.6f")
+    data = pd.read_csv(path)
+    return data["id"].to_numpy(), data.drop(columns="id").to_numpy()
 
 
 def robust_scale(X):

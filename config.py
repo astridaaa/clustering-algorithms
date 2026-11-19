@@ -37,6 +37,14 @@ N_COMPONENTS = {"pca": 3, "tsne": 2}
 TSNE_PARAMS = {"perplexity": 50, "init": "pca"}
 TSNE_RANDOM_STATE = 42
 
+DIMENSIONS = [2, 3, 5]
+DIMENSION_SPACES = ["originali"] + [f"{method}{dim}" for method in ["pca", "tsne"]
+                                    for dim in DIMENSIONS]
+DIMENSION_SPACE_NAMES = {"originali": "Pradinė erdvė (5D)",
+                         **{f"pca{dim}": f"PCA {dim}D" for dim in DIMENSIONS},
+                         **{f"tsne{dim}": f"t-SNE {dim}D" for dim in DIMENSIONS}}
+PROJECTIONS_DIR = ROOT / "rezultatai" / "erdves"
+
 
 SUBSAMPLE_FRACTION = 0.8
 N_SUBSAMPLES = {"originali": 20, "pca": 20, "tsne": 10}
