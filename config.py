@@ -32,7 +32,7 @@ RR_VID_ERROR_MS = 5000
 
 
 SPACES = ["originali", "pca", "tsne"]
-N_COMPONENTS = 2
+N_COMPONENTS = {"pca": 3, "tsne": 2}
 
 TSNE_PARAMS = {"perplexity": 50, "init": "pca"}
 TSNE_RANDOM_STATE = 42
