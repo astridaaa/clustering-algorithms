@@ -1,17 +1,3 @@
-"""Visi hierarchinio klasterizavimo grafikai (rezultatai/hierarchinis/grafikai/).
-
-Paleidžiama po hier_params.py, hier_stability.py ir hier_profiles.py.
-„Galutinės“ erdvės (FINAL_SPACES) – pradinė ir geriausios PCA / t-SNE dimensijos.
-  dendrogramos_<erdve>.png  – 5 jungimai (Euklido) + paskutinių sujungimų aukščiai
-                              (galutinėms erdvėms)
-  siluetas_pagal_k.png      – siluetas ir didžiausio klasterio dalis, k = 2…10
-                              (galutinėms erdvėms)
-  dimensijos.png            – PCA ir t-SNE 2D / 3D / 5D palyginimas
-  parametrai.png            – parametrų įtaka visose 7 erdvėse
-  klasteriai.png            – galutiniai klasteriai PCA ir t-SNE plokštumose
-  stabilumas.png            – ARI per imčių poras (7 erdvės) ir ARI vidurkis pagal N
-  klasiu_sudetis.png        – klasių sudėtis klasteriuose (tik interpretacijai)
-"""
 from hier_common import (BEST_DIMENSION, BY_K_FILE, CHOSEN, DETAILS_FILE,
                          DIMENSIONS_FILE, FINAL_SPACES, GRID, LABELS_FILE,
                          LINKAGE_NAMES, LINKAGES, METRIC_NAMES, OUTPUT_DIR,
@@ -287,8 +273,6 @@ def plot_composition(labels):
 
 
 def plot_dimensions():
-    """PCA ir t-SNE 2D / 3D / 5D: siluetas pradinėje erdvėje, ARI su pradine ir
-    stabilumas; punktyras – pradinės erdvės reikšmė."""
     dims = pd.read_csv(DIMENSIONS_FILE)
     original = dims[dims["erdve"] == "originali"].iloc[0]
     measures = [("siluetas_orig", "Siluetas pradinėje erdvėje", SERIES[0]),

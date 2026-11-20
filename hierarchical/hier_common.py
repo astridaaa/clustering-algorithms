@@ -1,9 +1,3 @@
-"""Bendri hierarchinio klasterizavimo nustatymai ir funkcijos.
-
-Naudojama scipy.cluster.hierarchy.linkage (aglomeracinis metodas), nes
-dendrogramoms reikia viso medžio. Klasės, ritmo ir įrašo žymės algoritmui
-niekada neperduodamos – jos naudojamos tik interpretacijai.
-"""
 import os
 import sys
 from pathlib import Path
@@ -66,17 +60,14 @@ FINAL_SPACES = ["originali"] + [BEST_DIMENSION[r] for r in REDUCTIONS]
 
 
 def reduction_of(space):
-    """'pca3' -> 'pca', 'tsne5' -> 'tsne', 'originali' -> 'originali'."""
     return space.rstrip("0123456789")
 
 
 def load(space):
-    """Visa aibė erdvėje (ids, X) – per bendrą common.load_projection."""
     return load_projection(space)
 
 
 def seeds_for(space):
-    """Stabilumo imčių sėklos: 20 pradinei ir PCA, 10 – t-SNE (config.N_SUBSAMPLES)."""
     return range(N_SUBSAMPLES[reduction_of(space)])
 
 
@@ -84,13 +75,6 @@ PREPARED_SUBSAMPLES = {"originali": "originali", "pca3": "pca", "tsne2": "tsne"}
 
 
 def load_space_subsample(space, seed):
-    """80 % imtis `seed` erdvėje `space`: (ids, X).
-
-    Jei paruoštos imties nėra, ji projektuojama iš naujo taip pat, kaip
-    prepare.py: imama ta pati iš naujo normuota pradinės erdvės imtis ir
-    PCA / t-SNE (random_state = seed, t-SNE parametrai ir metodas kaip
-    common.load_projection). t-SNE projekcijos išsaugomos SUBSAMPLE_CACHE_DIR.
-    """
     if space in PREPARED_SUBSAMPLES:
         return load_subsample(PREPARED_SUBSAMPLES[space], seed)
     ids, X = load_subsample("originali", seed)
@@ -110,22 +94,12 @@ def load_space_subsample(space, seed):
 
 
 def build_tree(X, method, metric):
-    """Visas aglomeracinis medis. Visada perduodami stebėjimai (ne atstumų
-    matrica): centroid ir ward reikalauja būtent jų, kitiems scipy pats
-    suskaičiuoja pdist su nurodytu atstumu."""
     if method in EUCLIDEAN_ONLY and metric != "euclidean":
         raise ValueError(f"{method} apibrėžtas tik Euklido atstumui")
     return linkage(X, method=method, metric=metric)
 
 
 def cut_tree_k(Z, k):
-    """Medžio pjūvis į lygiai k klasterių pagal sujungimų eilę.
-
-    Pritaikomi pirmi n - k sujungimai. Taip k gaunamas tiksliai net ir
-    centroid metodui, kurio aukščiai gali būti nemonotoniški (inversijos),
-    kai fcluster(..., 'maxclust') gali grąžinti mažiau klasterių.
-    Klasteriai numeruojami pagal dydį: 0 – didžiausias.
-    """
     n = len(Z) + 1
     members = {i: [i] for i in range(n)}
     for step in range(n - k):
@@ -141,7 +115,6 @@ def cut_tree_k(Z, k):
 
 
 def cut_height(Z, k):
-    """Aukštis tarp (k-1)-ojo ir k-ojo nuo viršaus sujungimo – pjūvio linija."""
     n = len(Z) + 1
     return (Z[n - k - 1, 2] + Z[n - k, 2]) / 2
 

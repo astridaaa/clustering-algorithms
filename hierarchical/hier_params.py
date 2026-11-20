@@ -1,25 +1,3 @@
-"""Visas parametrų tinklelis visose erdvėse: pradinėje (5D), PCA ir t-SNE su
-2, 3 ir 5 dimensijomis (config.DIMENSION_SPACES).
-
-Kiekvienai erdvei, jungimo metodui ir atstumui:
-  * sudaromas visas medis, k parenkamas pagal didžiausią tarpą tarp gretimų
-    sujungimų aukščių (k = 2…10) ir palyginamas su silueto maksimumu;
-  * skaičiuojami vidiniai matai (siluetas – tuo pačiu atstumu, CH, DB);
-  * išoriniai matai (ARI, NMI, Jaccard) – lyginant su tuo pačiu algoritmu ir
-    tais pačiais parametrais pradinėje erdvėje (jos k parinktas tarpo taisykle).
-
-Pastaba dėl t-SNE: atstumai tarp grupių ir viršutiniai dendrogramos lygiai
-nėra prasmingi, o vidiniai matai dirbtinai išpūsti (t-SNE pats suspaudžia
-grupes), todėl t-SNE su kitomis erdvėmis lyginamas pirmiausia pagal išorinius
-matus ir pagal vidinius matus, suskaičiuotus pradinėje erdvėje (*_orig).
-
-Dimensijų palyginimas (dimensijos.csv): kiekvienoje erdvėje pasirinkta
-konfigūracija (CHOSEN). Savo erdvės siluetas tarp dimensijų nepalyginamas
-(priklauso nuo dimensijos, t-SNE – išpūstas), todėl dimensijos lyginamos pagal
-siluetą PRADINĖJE erdvėje (siluetas_orig) ir ARI su pradine erdve; stabilumą
-prideda hier_stability.py. PCA 5D – tik pradinės erdvės pasukimas (Euklido
-atstumai identiški), todėl tai ne dimensijos mažinimas.
-"""
 from datetime import datetime
 
 from hier_common import (ALGORITHM, BY_K_FILE, CHOSEN, DETAILS_FILE,
@@ -47,7 +25,6 @@ def external(labels, reference):
 
 
 def dimension_table(details):
-    """Pasirinkta konfigūracija (CHOSEN) kiekvienoje erdvėje (be stabilumo)."""
     rows = []
     for space in SPACES:
         c = CHOSEN[space]

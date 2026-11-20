@@ -1,17 +1,3 @@
-"""Pasirinktų klasterių aprašymas ir pradinės bei sumažintų erdvių palyginimas.
-
-* Klasterių dydžiai ir požymių medianos pradiniais vienetais (data/A.csv).
-* Kryžminės lentelės su klase, ritmu, įrašu (dažniausi įrašai) ir ekstremalių
-  išskirčių dalis – žymės naudojamos TIK interpretacijai.
-* Sutampantys taškai tarp pradinės ir PCA / t-SNE erdvės klasterių
-  (kryžminė lentelė, Vengrų metodu suporuoti klasteriai), maži klasteriai.
-
-Profiliuojamos pradinė erdvė ir geriausios PCA / t-SNE dimensijos
-(hier_common.FINAL_SPACES, BEST_DIMENSION).
-
-PCA ir t-SNE klasteriai pernumeruojami pagal suporuotą pradinės erdvės
-klasterį, kad ta pati spalva / numeris reikštų tą pačią grupę.
-"""
 from hier_common import (CHOSEN, FINAL_SPACES, LABELS_FILE, PROFILES_DIR, build_tree, load,
                          config_title, cut_tree_k)
 
@@ -33,7 +19,6 @@ def chosen_labels(space):
 
 
 def align_labels(labels, pairs, k_reference):
-    """Suporuotas klasteris gauna atskaitos numerį; nesuporuoti – k_ref, k_ref + 1, ..."""
     mapping = dict(zip(pairs["klasteris"], pairs["atskaitos_klasteris"]))
     next_label = k_reference
     for label in np.unique(labels):
@@ -44,7 +29,6 @@ def align_labels(labels, pairs, k_reference):
 
 
 def profile(space, ids, labels, raw, meta):
-    """Dydis, išskirčių dalis, dominuojanti klasė ir medianos pradiniais vienetais."""
     frame = raw.loc[ids, FEATURES].assign(klasteris=labels)
     medians = frame.groupby("klasteris")[FEATURES].median()
     outliers = ev.outlier_share(ids, labels)

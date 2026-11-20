@@ -1,20 +1,3 @@
-"""Stabilumas 80 % imtyse (20 – pradinė ir PCA, 10 – t-SNE erdvės), visose
-7 erdvėse (pradinė, PCA ir t-SNE 2D/3D/5D).
-
-Kiekviena imtis normuota ir projektuota iš naujo: pradinė, PCA 3D ir t-SNE 2D –
-paruoštos (common.load_subsample), kitos dimensijos projektuojamos taip pat
-(hier_common.load_space_subsample; t-SNE 3D/5D išsaugomos imtys/ kataloge,
-t-SNE 5D – tikslus metodas, ~10 min. vienai imčiai).
-Imtis klasterizuojama tuo pačiu jungimu, atstumu ir FIKSUOTU k (kaip visoje
-aibėje); visos imčių poros lyginamos tik bendriems objektams (ARI, NMI, Jaccard).
-
-1. Pasirinktai konfigūracijai (CHOSEN): visos poros, vidiniai matai kiekvienoje
-   imtyje (vid. ± SN), ARI vidurkis pagal N = 5, 10, 15, 20 (t-SNE – N ≤ 10) ir
-   kaip dažnai tarpo taisyklė imtyje duoda tą patį k.
-2. Visoms tinklelio eilutėms – tik ARI vid. ± SN (parametrų įtakai stabilumui),
-   įrašoma į rezultatai.csv.
-3. Stabilumas pridedamas į dimensijos.csv – dimensijai pasirinkti.
-"""
 from itertools import combinations
 
 from hier_common import (CHOSEN, DIMENSIONS_FILE, GRID, OUTPUT_DIR,
@@ -63,7 +46,6 @@ def chosen_stability(space):
 
 
 def grid_stability(space, rows):
-    """ARI vid. ± SN kiekvienai tinklelio eilutei (fiksuotas tos eilutės k)."""
     labels = {}
     wanted = rows.groupby(["jungimas", "atstumas"])["k"].apply(list).to_dict()
     for seed in seeds_for(space):
