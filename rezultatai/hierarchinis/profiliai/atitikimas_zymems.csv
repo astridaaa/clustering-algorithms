@@ -1,0 +1,10 @@
+zyme,ari,nmi,jaccard,erdve
+klase,0.1533,0.2722,0.2533,originali
+ritmas,0.1896,0.1179,0.4567,originali
+irasas,0.0271,0.1236,0.0595,originali
+klase,0.1256,0.2499,0.24,pca2
+ritmas,0.1977,0.112,0.4688,pca2
+irasas,0.0222,0.113,0.0571,pca2
+klase,0.1462,0.2812,0.2543,tsne3
+ritmas,0.167,0.1049,0.4681,tsne3
+irasas,0.0248,0.1066,0.0587,tsne3
