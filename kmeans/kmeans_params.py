@@ -1,17 +1,16 @@
 from itertools import combinations
 
 from kmeans_common import (ALGORITHM, CHOSEN_K, OUTPUT_DIR, RANDOM_STATE,
-                           SKLEARN_METRIC, SPACE_NAMES, VARIANTS,
-                           background_map, fit_kmeans, fit_variant,
-                           plot_clusters, save_figure)
+                           REFERENCE, SKLEARN_METRIC, SPACE_NAMES, VARIANTS,
+                           background_map, final_spaces, fit_kmeans, fit_variant,
+                           load, load_space_subsample, plot_clusters, save_figure,
+                           seeds_for)
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 import evaluation as ev
-from common import load_space, load_subsample, subsample_seeds
-from config import SPACES
 
 BASE_VARIANT = "k-vidurkiai, Euklido"
 INIT_METHODS = ["k-means++", "random"]
@@ -20,15 +19,15 @@ INIT_SEEDS = range(10)
 
 def variant_stability(space, variant, k):
     samples = {}
-    for seed in subsample_seeds(space):
-        ids, X = load_subsample(space, seed)
+    for seed in seeds_for(space):
+        ids, X = load_space_subsample(space, seed)
         samples[seed] = (ids, X, fit_variant(X, variant, k, random_state=seed))
     pairs, _ = ev.stability(samples, metric=SKLEARN_METRIC[VARIANTS[variant][1]])
     return pairs
 
 
 def compare_distances(space, X_original):
-    ids, X = load_space(space)
+    ids, X = load(space)
     k = CHOSEN_K[space]
     base = fit_variant(X, BASE_VARIANT, k)
 
@@ -38,7 +37,7 @@ def compare_distances(space, X_original):
         labels_by_variant[variant] = labels
 
         internal = ev.internal_metrics(X, labels, metric=SKLEARN_METRIC[metric])
-        internal_original = (None if space == "originali"
+        internal_original = (None if space == REFERENCE
                              else ev.internal_metrics(X_original, labels))
         external = ev.external_metrics(base, labels)
         pairs = variant_stability(space, variant, k)
@@ -71,22 +70,21 @@ def compare_distances(space, X_original):
 
 
 def plot_distances(results):
-    fig, axes = plt.subplots(len(SPACES), len(VARIANTS), figsize=(18, 13))
+    spaces = list(results)
+    fig, axes = plt.subplots(len(spaces), len(VARIANTS), figsize=(18, 4.4 * len(spaces)))
     background = background_map()
-    for row, space in enumerate(SPACES):
+    for row, space in enumerate(spaces):
         ids, labels_by_variant = results[space]
         for col, variant in enumerate(VARIANTS):
-            ax = axes[row, col]
-            plot_clusters(ax, ids, labels_by_variant[variant],
+            plot_clusters(axes[row, col], ids, labels_by_variant[variant],
                           f"{SPACE_NAMES[space]}: {variant}", background)
     fig.suptitle("Atstumo mato poveikis (klasteriai pavaizduoti bendrame t-SNE žemėlapyje)",
                  fontsize=13)
     fig.tight_layout()
     save_figure(fig, "parametrai_atstumai.png")
 
-
 def compare_initialisation(space):
-    ids, X = load_space(space)
+    ids, X = load(space)
     k = CHOSEN_K[space]
 
     rows = []
@@ -123,11 +121,12 @@ def compare_initialisation(space):
 
 def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    _, X_original = load_space("originali")
-    print("Pasirinktas k:", CHOSEN_K)
+    _, X_original = load(REFERENCE)
+    spaces = final_spaces()
+    print("Erdvės (pradinė ir geriausios dimensijos):", ", ".join(spaces))
 
     distance_tables, initialisation_tables, plots = [], [], {}
-    for space in SPACES:
+    for space in spaces:
         print(f"\n{SPACE_NAMES[space]} (k = {CHOSEN_K[space]}), atstumo matas:")
         table, ids, labels_by_variant = compare_distances(space, X_original)
         distance_tables.append(table)
