@@ -1,0 +1,58 @@
+import numpy as np
+from scipy.spatial.distance import pdist, squareform
+from sklearn.metrics import (calinski_harabasz_score, davies_bouldin_score,
+                             silhouette_score)
+
+from hier_common import K_RANGE
+
+
+def distance_matrix(X, metric):
+    return squareform(pdist(X, metric=metric))
+
+
+def internal_measures(X, labels, D=None, metric="euclidean"):
+    if len(np.unique(labels)) < 2:
+        return {"siluetas": np.nan, "CH": np.nan, "DB": np.nan}
+    silhouette = (silhouette_score(D, labels, metric="precomputed") if D is not None
+                  else silhouette_score(X, labels, metric=metric))
+    return {"siluetas": silhouette,
+            "CH": calinski_harabasz_score(X, labels),
+            "DB": davies_bouldin_score(X, labels)}
+
+
+def merge_gaps(Z, k_range=K_RANGE):
+    n = len(Z) + 1
+    heights = Z[:, 2]
+    return {k: heights[n - k] - heights[n - k - 1] for k in k_range}
+
+
+def k_by_gap(Z, k_range=K_RANGE):
+    gaps = merge_gaps(Z, k_range)
+    return max(gaps, key=gaps.get), gaps
+
+
+def size_summary(labels):
+    sizes = np.sort(np.bincount(labels))[::-1]
+    return {
+        "dydziai": " / ".join(str(s) for s in sizes),
+        "didziausio_dalis": sizes[0] / sizes.sum(),
+        "mazu_klasteriu": int((sizes < 0.01 * sizes.sum()).sum()),
+        "pavieniu_tasku": int((sizes == 1).sum()),
+    }
+
+
+TOLERANCE = 0.01
+
+
+def recommend_dimension(table, reductions=("pca", "tsne")):
+    table = table.copy()
+    table["rekomenduojama"] = False
+    for reduction in reductions:
+        group = table[table["mazinimas"] == reduction]
+        close = group[group["siluetas_orig"] >= group["siluetas_orig"].max() - TOLERANCE]
+        if "stab_ARI_vid" in close and close["stab_ARI_vid"].notna().all():
+            best = close["stab_ARI_vid"].idxmax()
+        else:
+            best = close["dimensija"].idxmin()
+        table.loc[best, "rekomenduojama"] = True
+    return table

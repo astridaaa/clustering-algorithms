@@ -32,10 +32,18 @@ RR_VID_ERROR_MS = 5000
 
 
 SPACES = ["originali", "pca", "tsne"]
-N_COMPONENTS = 2
+N_COMPONENTS = {"pca": 3, "tsne": 2}
 
 TSNE_PARAMS = {"perplexity": 50, "init": "pca"}
 TSNE_RANDOM_STATE = 42
+
+DIMENSIONS = [2, 3, 5]
+DIMENSION_SPACES = ["originali"] + [f"{method}{dim}" for method in ["pca", "tsne"]
+                                    for dim in DIMENSIONS]
+DIMENSION_SPACE_NAMES = {"originali": "Pradinė erdvė (5D)",
+                         **{f"pca{dim}": f"PCA {dim}D" for dim in DIMENSIONS},
+                         **{f"tsne{dim}": f"t-SNE {dim}D" for dim in DIMENSIONS}}
+PROJECTIONS_DIR = ROOT / "rezultatai" / "erdves"
 
 
 SUBSAMPLE_FRACTION = 0.8

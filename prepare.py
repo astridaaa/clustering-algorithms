@@ -1,4 +1,5 @@
 import time
+from importlib.metadata import version
 
 import numpy as np
 import pandas as pd
@@ -10,11 +11,29 @@ from common import (META_FILE, SUBSAMPLES_FILE, coordinate_names,
 from config import (CLASS_COLUMN, CLASSES, CORRELATION_THRESHOLD,
                     EXPECTED_OBJECTS, EXPECTED_RR_ERRORS, FEATURE_SETS,
                     FEATURES, INPUT_FILE, MAIN_SET, META_COLUMNS,
-                    N_SUBSAMPLES, OUTLIER_COLUMN, PREPARED_DIR,
-                    RR_VID_ERROR_MS, SPACES, STABILITY_DIR, TSNE_RANDOM_STATE)
+                    N_COMPONENTS, N_SUBSAMPLES, OUTLIER_COLUMN, PREPARED_DIR,
+                    ROOT, RR_VID_ERROR_MS, SPACES, STABILITY_DIR,
+                    TSNE_RANDOM_STATE)
 
 
 REMOVED_FILE = PREPARED_DIR / "pasalintos_klaidos.csv"
+REQUIREMENTS_FILE = ROOT / "requirements.txt"
+
+FLOAT_FORMAT = "%.6f"
+
+
+def check_versions():
+    """PCA ir t-SNE rezultatai priklauso nuo bibliotekų versijų, todėl duomenys
+    ruošiami tik su requirements.txt nurodytomis versijomis."""
+    mismatches = []
+    for line in REQUIREMENTS_FILE.read_text(encoding="utf-8-sig").splitlines():
+        name, _, required = (part.strip() for part in line.partition("=="))
+        if required and version(name) != required:
+            mismatches.append(f"  {name}: įdiegta {version(name)}, reikia {required}")
+    if mismatches:
+        raise SystemExit("Bibliotekų versijos nesutampa su requirements.txt:\n"
+                         + "\n".join(mismatches)
+                         + "\nĮdiekite jas (Python 3.12): pip install -r requirements.txt")
 
 
 def load_input():
@@ -72,7 +91,7 @@ def check_correlation(data):
 def save_space(ids, coordinates, path, columns):
     table = pd.DataFrame(coordinates, columns=columns)
     table.insert(0, "id", ids)
-    table.to_csv(path, index=False)
+    table.to_csv(path, index=False, float_format=FLOAT_FORMAT)
 
 
 def prepare_full(data):
@@ -100,7 +119,9 @@ def prepare_full(data):
         "sukaupta": np.cumsum(pca.explained_variance_ratio_),
     })
     variance.round(4).to_csv(PREPARED_DIR / "pca_dispersija.csv", index=False)
-    print(f"\nPCA: 2 komponentės išlaiko {variance['sukaupta'][1] * 100:.1f} % dispersijos")
+    n_pca = N_COMPONENTS["pca"]
+    print(f"\nPCA: {n_pca} komponentės išlaiko "
+          f"{variance['sukaupta'][n_pca - 1] * 100:.1f} % dispersijos")
 
     for space in ["pca", "tsne"]:
         start = time.time()
@@ -136,12 +157,14 @@ def prepare_subsamples(data):
             table.insert(0, "id", ids)
             table.insert(0, "imtis", seed)
             rows.append(table)
-        pd.concat(rows).to_csv(stability_file(space, MAIN_SET), index=False)
+        pd.concat(rows).to_csv(stability_file(space, MAIN_SET), index=False,
+                               float_format=FLOAT_FORMAT)
         print(f"  {space}: {N_SUBSAMPLES[space]} imčių -> "
               f"stabilumas/{stability_file(space, MAIN_SET).name} ({time.time() - start:.0f} s)")
 
 
 def main():
+    check_versions()
     STABILITY_DIR.mkdir(parents=True, exist_ok=True)
 
     data = remove_rr_errors(load_input())

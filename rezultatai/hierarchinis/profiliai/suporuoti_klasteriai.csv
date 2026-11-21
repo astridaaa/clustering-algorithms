@@ -1,0 +1,6 @@
+atskaitos_klasteris,klasteris,sutampa,atskaitos_dydis,dydis,persidengimas,erdve
+0,0,3409,3433,3553,0.953,pca2
+1,1,1109,1252,1109,0.8858,pca2
+2,2,149,150,173,0.8563,pca2
+0,0,3420,3433,3661,0.9309,tsne3
+1,1,1161,1252,1174,0.9178,tsne3
