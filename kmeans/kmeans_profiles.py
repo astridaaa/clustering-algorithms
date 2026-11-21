@@ -1,4 +1,4 @@
-from kmeans_common import OUTPUT_DIR, cluster_colours, save_figure
+from kmeans_common import OUTPUT_DIR, SPACE_NAMES, cluster_colours, save_figure
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,10 +12,13 @@ FINAL_DIR = OUTPUT_DIR / "galutiniai"
 PROFILE_DIR = OUTPUT_DIR / "profiliai"
 
 UNITS = {"RR_sant_vid": "", "RR_pre": "ms", "RR_sant_post": "", "QRS": "ms", "QTc": "ms"}
+CLASS_COLOURS = {"N": "#2a78d6", "L": "#eb6834", "R": "#1baf7a", "V": "#eda100", "A": "#e87ba4"}
 TOP_N = 3
 
-RUN_TITLES = {"originali_k3": "Pradinė erdvė, k = 3", "pca_k3": "PCA erdvė, k = 3",
-              "tsne_k4": "t-SNE erdvė, k = 4", "tsne_k3": "t-SNE erdvė, k = 3"}
+
+def run_title(run):
+    space, k = run.rsplit("_k", 1)
+    return f"{SPACE_NAMES[space]}, k = {k}"
 
 
 def load_data():
@@ -55,18 +58,17 @@ def profile_run(data, labels, run):
 def plot_composition(data, labels):
     runs = list(labels.columns)
     fig, axes = plt.subplots(1, len(runs), figsize=(4.5 * len(runs), 4.5), sharey=True)
-    class_colours = {"N": "#2a78d6", "L": "#eb6834", "R": "#1baf7a", "V": "#eda100", "A": "#e87ba4"}
-    for ax, run in zip(axes, runs):
+    for ax, run in zip(np.atleast_1d(axes), runs):
         table = pd.crosstab(labels[run], data[CLASS_COLUMN], normalize="index")[CLASSES] * 100
         bottom = np.zeros(len(table))
         for name in CLASSES:
             ax.bar(table.index.astype(str), table[name], bottom=bottom,
-                   color=class_colours[name], label=name)
+                   color=CLASS_COLOURS[name], label=name)
             bottom += table[name].to_numpy()
         sizes = labels[run].value_counts().sort_index()
         ax.set_xticks(range(len(table)))
         ax.set_xticklabels([f"{c}\n({sizes[c]})" for c in table.index])
-        ax.set_title(RUN_TITLES.get(run, run), fontsize=10)
+        ax.set_title(run_title(run), fontsize=10)
         ax.set_xlabel("Klasteris (dydis)")
     axes[0].set_ylabel("Dūžių klasių dalis klasteryje, %")
     axes[-1].legend(title="Klasė", fontsize=8, frameon=False, bbox_to_anchor=(1, 1))
@@ -75,22 +77,29 @@ def plot_composition(data, labels):
     save_figure(fig, "profiliai_klases.png")
 
 
-def plot_features(data, labels, run="originali_k3"):
-    clusters = sorted(labels[run].unique())
-    colours = cluster_colours(len(clusters))
-    fig, axes = plt.subplots(1, len(FEATURES), figsize=(18, 4))
-    for ax, feature in zip(axes, FEATURES):
-        values = [data.loc[labels[run] == c, feature] for c in clusters]
-        parts = ax.boxplot(values, tick_labels=[str(c) for c in clusters],
-                           patch_artist=True, showfliers=False)
-        for patch, colour in zip(parts["boxes"], colours):
-            patch.set_facecolor(colour)
-            patch.set_alpha(0.6)
-        unit = f", {UNITS[feature]}" if UNITS[feature] else ""
-        ax.set_title(f"{feature}{unit}", fontsize=10)
-        ax.set_xlabel("Klasteris")
-        ax.grid(alpha=0.3, axis="y")
-    fig.suptitle(f"Požymių pasiskirstymas klasteriuose ({RUN_TITLES[run]}; be išskirčių ūsų)",
+def plot_features(data, labels):
+    runs = list(labels.columns)
+    fig, axes = plt.subplots(len(runs), len(FEATURES), figsize=(18, 3.6 * len(runs)),
+                             squeeze=False)
+    for row, run in enumerate(runs):
+        clusters = sorted(labels[run].unique())
+        colours = cluster_colours(max(clusters) + 1)
+        for col, feature in enumerate(FEATURES):
+            ax = axes[row, col]
+            values = [data.loc[labels[run] == c, feature] for c in clusters]
+            parts = ax.boxplot(values, tick_labels=[str(c) for c in clusters],
+                               patch_artist=True, showfliers=False)
+            for patch, cluster in zip(parts["boxes"], clusters):
+                patch.set_facecolor(colours[cluster])
+                patch.set_alpha(0.6)
+            unit = f", {UNITS[feature]}" if UNITS[feature] else ""
+            ax.set_title(f"{feature}{unit}", fontsize=10)
+            ax.grid(alpha=0.3, axis="y")
+            if col == 0:
+                ax.set_ylabel(run_title(run), fontsize=9)
+            if row == len(runs) - 1:
+                ax.set_xlabel("Klasteris")
+    fig.suptitle("Požymių pasiskirstymas klasteriuose (originalūs vienetai; be išskirčių ūsų)",
                  fontsize=12)
     fig.tight_layout()
     save_figure(fig, "profiliai_pozymiai.png")
@@ -115,7 +124,7 @@ def main():
     medians = [f"{feature}_mediana" for feature in FEATURES]
     for run in labels.columns:
         table = profiles[profiles["suskirstymas"] == run]
-        print(f"\n{RUN_TITLES.get(run, run)}:")
+        print(f"\n{run_title(run)}:")
         print(table[["klasteris", "dydis", "isskirciu_dalis_%", *medians,
                      *[f"{name}_%" for name in CLASSES]]].round(2).to_string(index=False))
         print(table[["klasteris", "dazniausi_ritmai", "dazniausi_irasai"]].to_string(index=False))

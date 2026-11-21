@@ -1,4 +1,8 @@
 erdve,empyrinis,alkunes,silueto,CH,DB,stabiliausias
 originali,49,3,3,3,3,3
-pca,49,4,3,5,3,3
-tsne,49,4,14,15,13,4
+pca2,49,4,3,5,3,3
+pca3,49,3,3,3,3,2
+pca5,49,3,3,3,3,3
+tsne2,49,4,7,15,13,4
+tsne3,49,4,8,14,8,8
+tsne5,49,5,2,2,13,2

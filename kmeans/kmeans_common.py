@@ -14,19 +14,31 @@ import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 
-from common import load_space
+from common import load_projection, load_space, load_subsample
+from config import (DIMENSION_SPACE_NAMES, DIMENSION_SPACES, N_SUBSAMPLES,
+                    TSNE_PARAMS)
 from evaluation import RESULTS_DIR
 
 OUTPUT_DIR = RESULTS_DIR / "kmeans"
 FIGURES_DIR = OUTPUT_DIR / "grafikai"
+DIMENSIONS_FILE = OUTPUT_DIR / "dimensijos.csv"
 
 ALGORITHM = "k-means"
 RANDOM_STATE = 0
 
-CHOSEN_K = {"originali": 3, "pca": 3, "tsne": 4}
-
-SPACE_NAMES = {"originali": "Pradinė erdvė", "pca": "PCA erdvė", "tsne": "t-SNE erdvė"}
+SPACES = DIMENSION_SPACES
+SPACE_NAMES = DIMENSION_SPACE_NAMES
+REDUCTIONS = ["pca", "tsne"]
+REFERENCE = "originali"
+CHOSEN_K = {"originali": 3,
+            "pca2": 3, "pca3": 3, "pca5": 3,
+            "tsne2": 4, "tsne3": 8, "tsne5": 2}
+PREPARED_SUBSAMPLES = {"originali": "originali", "pca3": "pca", "tsne2": "tsne"}
+SHARED_SUBSAMPLE_DIR = RESULTS_DIR / "hierarchinis" / "imtys"
+OWN_SUBSAMPLE_DIR = OUTPUT_DIR / "imtys"
 
 VARIANTS = {
     "k-vidurkiai, Euklido": ("kmeans", "euclidean"),
@@ -38,23 +50,79 @@ VARIANTS = {
 SKLEARN_METRIC = {"euclidean": "euclidean", "cityblock": "manhattan",
                   "chebyshev": "chebyshev"}
 
+def reduction_of(space):
+    return space.rstrip("0123456789")
+
+
+def dimension_of(space):
+    return 5 if space == REFERENCE else int(space[len(reduction_of(space)):])
+
+
+def load(space):
+    return load_projection(space)
+
+
+def seeds_for(space):
+    return range(N_SUBSAMPLES[reduction_of(space)])
+
+
+def load_space_subsample(space, seed):
+    if space in PREPARED_SUBSAMPLES:
+        return load_subsample(PREPARED_SUBSAMPLES[space], seed)
+    ids, X = load_subsample(REFERENCE, seed)
+    method, dim = reduction_of(space), dimension_of(space)
+    if method == "pca":
+        return ids, PCA(n_components=dim).fit_transform(X)
+
+    name = f"{space}_imtis{seed}.csv"
+    path = SHARED_SUBSAMPLE_DIR / name
+    if not path.exists():
+        path = OWN_SUBSAMPLE_DIR / name
+    if not path.exists():
+        model = TSNE(n_components=dim, random_state=seed,
+                     method="barnes_hut" if dim <= 3 else "exact", **TSNE_PARAMS)
+        table = pd.DataFrame(model.fit_transform(X))
+        table.insert(0, "id", ids)
+        OWN_SUBSAMPLE_DIR.mkdir(parents=True, exist_ok=True)
+        table.to_csv(path, index=False, float_format="%.6f")
+    data = pd.read_csv(path)
+    return data["id"].to_numpy(), data.drop(columns="id").to_numpy()
+
+
+def load_best_dimensions():
+    if not DIMENSIONS_FILE.exists():
+        raise SystemExit("Pirmiausia paleiskite kmeans/kmeans_dimensions.py")
+    table = pd.read_csv(DIMENSIONS_FILE)
+    best = table[table["rekomenduojama"]]
+    return dict(zip(best["mazinimas"], best["erdve"]))
+
+
+def final_spaces():
+    best = load_best_dimensions()
+    return [REFERENCE] + [best[reduction] for reduction in REDUCTIONS]
+
 def fit_kmeans(X, k, init="k-means++", n_init=10, random_state=RANDOM_STATE):
-    """k-vidurkiai. Grąžina (žymės, centrai, E_k-means)."""
     model = KMeans(n_clusters=k, init=init, n_init=n_init,
                    random_state=random_state).fit(X)
     return model.labels_, model.cluster_centers_, model.inertia_
 
+
+def subsample_runs(space, k):
+    runs = {}
+    for seed in seeds_for(space):
+        ids, X = load_space_subsample(space, seed)
+        runs[seed] = (ids, X, fit_kmeans(X, k, random_state=seed)[0])
+    return runs
+
 def _distance_sums(points, metric, chunk=1000):
-    """Kiekvieno taško atstumų iki visų kitų taškų suma (dalimis, taupant atmintį)."""
     sums = np.empty(len(points))
     for start in range(0, len(points), chunk):
         sums[start:start + chunk] = cdist(points[start:start + chunk], points,
                                           metric=metric).sum(axis=1)
     return sums
 
+
 def _kmedoids_init(X, k, metric, rng):
-    """k-medoids++: kitas medoidas renkamas su tikimybe, proporcinga atstumui
-    iki artimiausio jau parinkto medoido (kaip k-means++)."""
     medoids = [rng.integers(len(X))]
     nearest = cdist(X, X[medoids], metric=metric).ravel()
     for _ in range(1, k):
@@ -94,6 +162,14 @@ def fit_variant(X, variant, k, n_init=10, random_state=RANDOM_STATE):
     return fit_kmedoids(X, k, metric=metric, n_init=n_init,
                         random_state=random_state)[0]
 
+def align_labels(labels, pairs, k_reference):
+    mapping = dict(zip(pairs["klasteris"], pairs["atskaitos_klasteris"]))
+    next_label = k_reference
+    for label in np.unique(labels):
+        if label not in mapping:
+            mapping[label] = next_label
+            next_label += 1
+    return np.array([mapping[label] for label in labels])
 
 def background_map():
     ids, Y = load_space("tsne")
@@ -109,11 +185,11 @@ def plot_clusters(ax, ids, labels, title, background=None):
     background = background if background is not None else background_map()
     points = background.loc[ids]
     names = np.unique(labels)
-    colours = cluster_colours(len(names))
-    for colour, name in zip(colours, names):
+    colours = cluster_colours(max(names) + 1)
+    for name in names:
         mask = labels == name
         ax.scatter(points["x"].to_numpy()[mask], points["y"].to_numpy()[mask],
-                   s=3, color=colour, label=f"{name} ({mask.sum()})", rasterized=True)
+                   s=3, color=colours[name], label=f"{name} ({mask.sum()})", rasterized=True)
     ax.set_title(title, fontsize=10)
     ax.set_xticks([])
     ax.set_yticks([])
