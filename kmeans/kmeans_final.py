@@ -1,23 +1,26 @@
 from kmeans_common import (ALGORITHM, CHOSEN_K, OUTPUT_DIR, RANDOM_STATE,
-                           SPACE_NAMES, background_map, fit_kmeans,
-                           plot_clusters, save_figure)
+                           REFERENCE, SPACE_NAMES, align_labels, background_map,
+                           final_spaces, fit_kmeans, load, plot_clusters,
+                           save_figure, subsample_runs)
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 import evaluation as ev
-from common import load_space, load_subsample, subsample_seeds
 
 PARAMS = {"init": "k-means++", "n_init": 10, "atstumas": "euclidean"}
-
-REFERENCE = ("originali", CHOSEN_K["originali"])
-RUNS = [REFERENCE,
-        ("pca", CHOSEN_K["pca"]),
-        ("tsne", CHOSEN_K["tsne"]),
-        ("tsne", CHOSEN_K["originali"])]
-
 FINAL_DIR = OUTPUT_DIR / "galutiniai"
+K_REFERENCE = CHOSEN_K[REFERENCE]
+
+
+def final_runs():
+    runs = []
+    for space in final_spaces():
+        runs.append((space, CHOSEN_K[space]))
+        if CHOSEN_K[space] != K_REFERENCE:
+            runs.append((space, K_REFERENCE))
+    return runs
 
 
 def run_name(space, k):
@@ -25,32 +28,12 @@ def run_name(space, k):
 
 
 def run_title(space, k):
-    extra = " (tas pats k kaip pradinėje)" if (space, k) == ("tsne", REFERENCE[1]) else ""
+    extra = " (tas pats k kaip pradinėje)" if k != CHOSEN_K[space] else ""
     return f"{SPACE_NAMES[space]}, k = {k}{extra}"
 
 
-def align_labels(labels, pairs, k_reference):
-    """Suporuotiems klasteriams suteikiamas atskaitos klasterio numeris,
-    nesuporuoti (kai k didesnis nei atskaitos) gauna numerius k_ref, k_ref + 1, ..."""
-    mapping = dict(zip(pairs["klasteris"], pairs["atskaitos_klasteris"]))
-    next_label = k_reference
-    for label in np.unique(labels):
-        if label not in mapping:
-            mapping[label] = next_label
-            next_label += 1
-    return np.array([mapping[label] for label in labels])
-
-
-def stability(space, k):
-    samples = {}
-    for seed in subsample_seeds(space):
-        ids, X = load_subsample(space, seed)
-        samples[seed] = (ids, X, fit_kmeans(X, k, random_state=seed)[0])
-    return ev.stability(samples)
-
-
 def evaluate_run(space, k, X_original, reference):
-    ids, X = load_space(space)
+    ids, X = load(space)
     labels = fit_kmeans(X, k)[0]
 
     internal = ev.internal_metrics(X, labels)
@@ -67,13 +50,13 @@ def evaluate_run(space, k, X_original, reference):
         pairs.to_csv(FINAL_DIR / f"sutampa_{run_name(space, k)}.csv", index=False)
         crosstab.to_csv(FINAL_DIR / f"kryzmine_{run_name(space, k)}.csv")
 
-    stability_pairs, stability_samples = stability(space, k)
+    stability_pairs, stability_samples = ev.stability(subsample_runs(space, k))
     ev.log_experiment(ALGORITHM, space, {"k": k, **PARAMS}, labels,
                       random_state=RANDOM_STATE, internal=internal,
-                      internal_original=None if space == "originali" else internal_original,
+                      internal_original=None if space == REFERENCE else internal_original,
                       external=external, stability_pairs=stability_pairs,
-                      notes="galutinis modelis" + ("" if reference is None
-                                                   else "; išoriniai matai – su pradine erdve, k = 3"))
+                      notes="galutinis modelis" + ("" if reference is None else
+                                                   f"; išoriniai matai – su pradine erdve, k = {K_REFERENCE}"))
 
     stab = ev.summarize(stability_pairs, ["ari", "nmi", "jaccard"])
     stab_internal = ev.summarize(stability_samples, ["silhouette", "ch", "db"])
@@ -89,14 +72,21 @@ def evaluate_run(space, k, X_original, reference):
     }
 
     stability_pairs = stability_pairs.assign(variantas=run_title(space, k))
-    by_n = ev.stability_vs_n(stability_pairs).assign(variantas=run_title(space, k))
+    by_n = ev.stability_vs_n(stability_pairs, ns=[n for n in (5, 10, 15, 20)
+                                                  if n <= len(stability_samples)])
+    by_n = by_n.assign(variantas=run_title(space, k))
     return ids, labels, pairs, row, stability_pairs, by_n
 
 
 def plot_final(results, background):
-    fig, axes = plt.subplots(2, 2, figsize=(13, 11))
+    n = len(results)
+    cols = 2 if n <= 4 else 3
+    rows = -(-n // cols)
+    fig, axes = plt.subplots(rows, cols, figsize=(6.5 * cols, 5.5 * rows), squeeze=False)
     for ax, ((space, k), (ids, aligned)) in zip(axes.ravel(), results.items()):
         plot_clusters(ax, ids, aligned, run_title(space, k), background)
+    for ax in axes.ravel()[n:]:
+        ax.set_visible(False)
     fig.suptitle("Galutiniai k-vidurkių klasteriai (bendras t-SNE žemėlapis; "
                  "ta pati spalva – suporuotas klasteris)", fontsize=13)
     fig.tight_layout()
@@ -111,6 +101,7 @@ def plot_stability(stability_pairs, by_n):
                   for name in names], tick_labels=[name.replace(", ", "\n", 1) for name in names])
     left.set_ylabel("ARI tarp imčių porų")
     left.set_title("Stabilumas: ARI pasiskirstymas per 80 % imčių poras")
+    left.tick_params(axis="x", labelsize=8)
     left.grid(alpha=0.3, axis="y")
 
     for name in names:
@@ -130,21 +121,21 @@ def plot_stability(stability_pairs, by_n):
 
 def main():
     FINAL_DIR.mkdir(parents=True, exist_ok=True)
-    _, X_original = load_space("originali")
+    all_ids, X_original = load(REFERENCE)
     background = background_map()
 
     rows, stability_tables, by_n_tables, plots = [], [], [], {}
-    labels_table = pd.DataFrame({"id": load_space("originali")[0]}).set_index("id")
+    labels_table = pd.DataFrame({"id": all_ids}).set_index("id")
     reference = None
 
-    for space, k in RUNS:
+    for space, k in final_runs():
         print(f"{run_title(space, k)}...")
         ids, labels, pairs, row, stability_pairs, by_n = evaluate_run(
             space, k, X_original, reference)
         if reference is None:
             reference = (ids, labels)
 
-        aligned = align_labels(labels, pairs, REFERENCE[1])
+        aligned = align_labels(labels, pairs, K_REFERENCE)
         labels_table.loc[ids, run_name(space, k)] = aligned
         plots[(space, k)] = (ids, aligned)
         rows.append(row)
@@ -160,7 +151,7 @@ def main():
     labels_table.astype(int).to_csv(FINAL_DIR / "zymes.csv")
 
     pd.set_option("display.width", 250)
-    print("\nEksperimentų lentelė (išoriniai matai – lyginant su pradine erdve, k = 3):")
+    print(f"\nEksperimentų lentelė (išoriniai matai – lyginant su pradine erdve, k = {K_REFERENCE}):")
     print(table[["erdve", "k", "silhouette", "ch", "db", "silhouette_orig",
                  "ari", "nmi", "jaccard", "sutampa_tasku", "sutampa_dalis",
                  "stab_ari", "klasteriu_dydziai"]].round(3).to_string(index=False))
@@ -171,7 +162,7 @@ def main():
 
     plot_final(plots, background)
     plot_stability(stability_pairs, by_n)
-    print(f"Išsaugota: rezultatai/kmeans/galutiniai/")
+    print("Išsaugota: rezultatai/kmeans/galutiniai/")
 
 
 if __name__ == "__main__":
