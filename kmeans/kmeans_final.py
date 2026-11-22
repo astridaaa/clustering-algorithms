@@ -12,6 +12,7 @@ import evaluation as ev
 PARAMS = {"init": "k-means++", "n_init": 10, "atstumas": "euclidean"}
 FINAL_DIR = OUTPUT_DIR / "galutiniai"
 K_REFERENCE = CHOSEN_K[REFERENCE]
+SAME_K_NOTE = " (tas pats k kaip pradinėje)"
 
 
 def final_runs():
@@ -28,7 +29,7 @@ def run_name(space, k):
 
 
 def run_title(space, k):
-    extra = " (tas pats k kaip pradinėje)" if k != CHOSEN_K[space] else ""
+    extra = SAME_K_NOTE if k != CHOSEN_K[space] else ""
     return f"{SPACE_NAMES[space]}, k = {k}{extra}"
 
 
@@ -94,27 +95,36 @@ def plot_final(results, background):
 
 
 def plot_stability(stability_pairs, by_n):
-    names = list(dict.fromkeys(stability_pairs["variantas"]))
-    fig, (left, right) = plt.subplots(1, 2, figsize=(15, 5))
+    names = [name for name in dict.fromkeys(stability_pairs["variantas"])
+             if not name.endswith(SAME_K_NOTE)]
+    colours = dict(zip(names, ["#2a78d6", "#eb6834", "#1baf7a"]))
+    fig, (left, right) = plt.subplots(1, 2, figsize=(14, 5), sharey=True,
+                                      gridspec_kw={"width_ratios": [1, 1.2]})
 
-    left.boxplot([stability_pairs.loc[stability_pairs["variantas"] == name, "ari"]
-                  for name in names], tick_labels=[name.replace(", ", "\n", 1) for name in names])
+    parts = left.boxplot([stability_pairs.loc[stability_pairs["variantas"] == name, "ari"]
+                          for name in names],
+                         tick_labels=[name.replace(", ", "\n", 1) for name in names],
+                         patch_artist=True, widths=0.5,
+                         medianprops={"color": "black"})
+    for patch, name in zip(parts["boxes"], names):
+        patch.set_facecolor(colours[name])
+        patch.set_alpha(0.6)
+    left.set_ylim(0.9, 1.005)
     left.set_ylabel("ARI tarp imčių porų")
-    left.set_title("Stabilumas: ARI pasiskirstymas per 80 % imčių poras")
-    left.tick_params(axis="x", labelsize=8)
+    left.set_title("ARI tarp visų 80 % imčių porų")
     left.grid(alpha=0.3, axis="y")
 
     for name in names:
         data = by_n[by_n["variantas"] == name]
         right.errorbar(data["N"], data["vidurkis"], yerr=data["sn"], fmt="o-",
-                       capsize=3, label=name)
+                       capsize=4, linewidth=2, color=colours[name], label=name)
     right.set_xticks([5, 10, 15, 20])
-    right.set_xlabel("Imčių skaičius N")
-    right.set_ylabel("ARI vidurkis ± SN")
-    right.set_title("Imčių pakankamumas")
-    right.legend(fontsize=8, frameon=False)
+    right.set_xlabel("Imčių skaičius N (t-SNE – iki 10)")
+    right.set_title("ARI vidurkis ± SN pagal imčių skaičių")
+    right.legend(fontsize=9, frameon=False, loc="lower right")
     right.grid(alpha=0.3)
 
+    fig.suptitle("Galutinių k-vidurkių suskirstymų stabilumas", fontsize=13)
     fig.tight_layout()
     save_figure(fig, "galutiniai_stabilumas.png")
 

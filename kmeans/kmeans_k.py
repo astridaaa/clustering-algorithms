@@ -99,8 +99,8 @@ def plot_criteria(table):
             if row == len(SPACES) - 1:
                 ax.set_xlabel("k")
             ax.set_ylabel(f"{SPACE_NAMES[space]}\n{ylabel}" if col == 0 else ylabel, fontsize=9)
-    fig.suptitle("k-vidurkių klasterių skaičiaus parinkimo kriterijai", fontsize=13)
-    fig.tight_layout()
+    fig.suptitle("k-vidurkių klasterių skaičiaus parinkimo kriterijai", fontsize=14)
+    fig.tight_layout(rect=(0, 0, 1, 0.985))
     save_figure(fig, "k_kriterijai.png")
 
 
