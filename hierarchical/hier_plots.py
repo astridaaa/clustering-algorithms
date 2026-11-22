@@ -216,7 +216,7 @@ def plot_stability():
     pairs = pd.read_csv(STABILITY_DIR / "stabilumas_poros.csv")
     by_n = pd.read_csv(STABILITY_DIR / "stabilumas_pagal_n.csv")
     spaces = [s for s in SPACES if (pairs["erdve"] == s).any()]
-    names = [f"{SHORT_NAMES[s]}\nk = {CHOSEN[s]['k']}" + (" ★" if s in FINAL_SPACES[1:] else "")
+    names = [f"{SHORT_NAMES[s]}\nk = {CHOSEN[s]['k']}" + ("\n(pasirinkta)" if s in FINAL_SPACES[1:] else "")
              for s in spaces]
     colours = {"originali": SERIES[0], "pca": SERIES[1], "tsne": SERIES[2]}
     fig, (left, right) = plt.subplots(1, 2, figsize=(15, 5), width_ratios=(1.5, 1))
@@ -227,7 +227,7 @@ def plot_stability():
         patch.set_facecolor(colours[space.rstrip("0123456789")])
         patch.set_alpha(0.55)
     left.set_ylabel("ARI tarp imčių porų (bendri objektai)")
-    left.set_title("Stabilumas: ARI per 80 % imčių poras (Ward, Euklido; ★ – pasirinkta dimensija)")
+    left.set_title("Stabilumas: ARI per 80 % imčių poras (Ward, Euklido)")
     left.set_ylim(0, 1.02)
     style_grid(left)
 
