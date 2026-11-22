@@ -18,6 +18,17 @@ from config import CLASS_COLUMN
 EPS_FACTORS = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
 KNEE_COLOUR = PALETTE[1]
 MIN_SAMPLES_GRID = [5, 10, 20]
+SUMMARY_SPACES = ["originali", "pca2", "tsne3"]
+MIN_SAMPLES_COLOURS = {5: "#4c72b0", 10: "#c44e52", 20: "#55a868"}
+LINE_PANELS = [("k", "Klasterių skaičius"),
+               ("triuksmo_dalis_%", "Triukšmo dalis, %"),
+               ("didziausio_dalis_%", "Didžiausio klasterio dalis, %"),
+               ("ari_klase", "Atitikimas klasėms (ARI)")]
+
+COLOUR_HEATMAPS = [("k", "Klasterių skaičius", "{:.0f}", "Purples", True),
+                   ("triuksmo_dalis_%", "Triukšmo dalis, %", "{:.0f}", "Reds", False),
+                   ("didziausio_dalis_%", "Didžiausio klasterio dalis, %", "{:.0f}", "Blues", False),
+                   ("ari_klase", "Atitikimas klasėms (ARI)", "{:.2f}", "Greens", False)]
 
 HEATMAPS = [("k", "Klasterių skaičius", "{:.0f}"),
             ("triuksmo_dalis_%", "Triukšmo dalis, %", "{:.1f}"),
@@ -151,6 +162,89 @@ def plot_heatmaps(table):
     save_figure(fig, "parametrai.png")
 
 
+def plot_lines(table):
+    fig, axes = plt.subplots(len(LINE_PANELS), len(SUMMARY_SPACES), figsize=(13, 11),
+                             sharex=True, sharey="row")
+    for col, space in enumerate(SUMMARY_SPACES):
+        data = table[table["erdve"] == space]
+        knee = data.loc[data["eps_daugiklis"] == 1.0, "eps"].iloc[0]
+        axes[0, col].set_title(f"{SPACE_NAMES[space]} (kelio eps = {knee:.3f})".replace(".", ","),
+                               fontsize=11)
+        for row, (column, label) in enumerate(LINE_PANELS):
+            ax = axes[row, col]
+            for min_samples in MIN_SAMPLES_GRID:
+                line = data[data["min_samples"] == min_samples].sort_values("eps_daugiklis")
+                ax.plot(line["eps_daugiklis"], line[column], "-o", markersize=4, linewidth=1.8,
+                        color=MIN_SAMPLES_COLOURS[min_samples], label=f"MinPts = {min_samples}")
+            ax.axvline(1.0, color="#6b6b6b", linestyle="--", linewidth=1)
+            ax.grid(alpha=0.3)
+            ax.spines[["top", "right"]].set_visible(False)
+            if col == 0:
+                ax.set_ylabel(label, fontsize=10)
+            if row == len(LINE_PANELS) - 1:
+                ax.set_xlabel("eps / kelio eps")
+    axes[0, 0].set_yscale("symlog", linthresh=10)
+    axes[0, 0].set_ylim(0, 250)
+    axes[0, 0].set_yticks([0, 5, 10, 20, 50, 100, 200])
+    axes[0, 0].set_yticklabels(["0", "5", "10", "20", "50", "100", "200"])
+    for row in (1, 2):
+        axes[row, 0].set_ylim(0, 102)
+    axes[-1, 0].set_xticks(EPS_FACTORS)
+    axes[-1, 0].set_xticklabels([f"{f:g}".replace(".", ",") for f in EPS_FACTORS])
+    handles, names = axes[0, 0].get_legend_handles_labels()
+    handles.append(plt.Line2D([], [], color="#6b6b6b", linestyle="--"))
+    names.append("kelio metodu parinktas eps")
+    fig.legend(handles, names, loc="lower center", ncol=4, frameon=False, fontsize=10)
+    fig.suptitle("DBSCAN parametrų įtaka pradinėje, PCA 2D ir t-SNE 3D erdvėse", fontsize=13)
+    fig.tight_layout(rect=(0, 0.03, 1, 1))
+    save_figure(fig, "parametrai_v2.png")
+
+
+def plot_colour_heatmaps(table):
+    from matplotlib.colors import SymLogNorm, Normalize
+    fig, axes = plt.subplots(len(SUMMARY_SPACES), len(COLOUR_HEATMAPS), figsize=(17, 7.5),
+                             sharex=True)
+    for col, (column, title, fmt, cmap_name, log) in enumerate(COLOUR_HEATMAPS):
+        values_all = table.loc[table["erdve"].isin(SUMMARY_SPACES), column].astype(float)
+        high = max(values_all.max(), 1e-9)
+        norm = (SymLogNorm(linthresh=5, vmin=0, vmax=high) if log
+                else Normalize(vmin=0, vmax=100 if column.endswith("%") else high))
+        cmap = plt.get_cmap(cmap_name)
+        for row, space in enumerate(SUMMARY_SPACES):
+            ax = axes[row, col]
+            data = table[table["erdve"] == space]
+            grid = data.pivot(index="min_samples", columns="eps_daugiklis", values=column)
+            values = grid.to_numpy(dtype=float)
+            ax.imshow(values, cmap=cmap, norm=norm, aspect="auto")
+            for i in range(values.shape[0]):
+                for j in range(values.shape[1]):
+                    value = values[i, j]
+                    text = fmt.format(abs(value) if abs(value) < 0.005 else value).replace(".", ",")
+                    ax.text(j, i, text, ha="center", va="center", fontsize=8,
+                            color="white" if norm(value) > 0.6 else "#1a1a1a")
+            knee = list(grid.columns).index(1.0)
+            ax.add_patch(plt.Rectangle((knee - 0.5, -0.5), 1, len(grid.index), fill=False,
+                                       edgecolor="#1a1a1a", linewidth=1.8))
+            ax.set_yticks(range(len(grid.index)), [f"MinPts = {m}" for m in grid.index], fontsize=8)
+            ax.set_xticks(range(len(grid.columns)),
+                          [f"{f:g}".replace(".", ",") for f in grid.columns], fontsize=8)
+            ax.tick_params(length=0)
+            for spine in ax.spines.values():
+                spine.set_visible(False)
+            if row == 0:
+                ax.set_title(title, fontsize=11)
+            if col == 0:
+                ax.set_ylabel(SPACE_NAMES[space], fontsize=11, fontweight="bold")
+            else:
+                ax.set_yticklabels([])
+            if row == len(SUMMARY_SPACES) - 1:
+                ax.set_xlabel("eps / kelio eps")
+    fig.suptitle("DBSCAN parametrų įtaka pradinėje, PCA 2D ir t-SNE 3D erdvėse "
+                 "(apvestas stulpelis – kelio metodu parinktas eps)", fontsize=13)
+    fig.tight_layout()
+    save_figure(fig, "parametrai_v3.png")
+
+
 def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     _, X_original = load("originali")
@@ -168,6 +262,8 @@ def main():
     print("\nKlasterių skaičius pagal kiekvieną kriterijų (galutinį sutariame grupėje):")
     print(proposals.round(3).to_string(index=False))
     plot_heatmaps(table)
+    plot_lines(table)
+    plot_colour_heatmaps(table)
     print("\nPastaba: siluetas skaičiuojamas be triukšmo taškų; kai k < 2, jis neapibrėžtas. "
           "Stabilumas – tik pradinėje erdvėje.")
     print("Išsaugota: rezultatai/dbscan/parametrai.csv")

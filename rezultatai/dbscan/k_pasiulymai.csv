@@ -1,0 +1,51 @@
+erdve,kriterijus,eps,min_samples,k,triuksmo_dalis_%
+originali,"kelio metodas, min_samples = 5",0.993,5,5,2.03
+originali,"kelio metodas, min_samples = 10",1.087,10,2,2.36
+originali,"kelio metodas, min_samples = 20",1.33,20,1,1.84
+originali,didžiausias siluetas,1.631,10,2,0.6
+originali,didžiausias CH,1.359,5,2,0.765
+originali,mažiausias DB,1.631,10,2,0.6
+originali,stabiliausias,2.174,20,2,0.476
+originali,"k = 5 (tiek, kiek klasių)",0.62,10,5,9.78
+pca2,"kelio metodas, min_samples = 5",0.354,5,1,2.05
+pca2,"kelio metodas, min_samples = 10",0.493,10,1,1.82
+pca2,"kelio metodas, min_samples = 20",0.617,20,1,1.76
+pca2,didžiausias siluetas,0.493,5,2,1.096
+pca2,didžiausias CH,0.123,10,11,19.772
+pca2,mažiausias DB,0.74,10,2,1.034
+pca2,"k = 5 (tiek, kiek klasių)",0.148,10,5,14.99
+pca3,"kelio metodas, min_samples = 5",0.69,5,4,1.55
+pca3,"kelio metodas, min_samples = 10",0.781,10,2,1.9
+pca3,"kelio metodas, min_samples = 20",1.017,20,2,1.68
+pca3,didžiausias siluetas,1.171,10,2,0.641
+pca3,didžiausias CH,1.171,10,2,0.641
+pca3,mažiausias DB,1.171,10,2,0.641
+pca3,"k = 5 (tiek, kiek klasių)",0.523,10,5,4.51
+pca5,"kelio metodas, min_samples = 5",0.993,5,5,2.03
+pca5,"kelio metodas, min_samples = 10",1.087,10,2,2.36
+pca5,"kelio metodas, min_samples = 20",1.33,20,1,1.84
+pca5,didžiausias siluetas,1.631,10,2,0.6
+pca5,didžiausias CH,1.359,5,2,0.765
+pca5,mažiausias DB,1.631,10,2,0.6
+pca5,"k = 5 (tiek, kiek klasių)",0.62,10,5,9.78
+tsne2,"kelio metodas, min_samples = 5",1.453,5,69,3.78
+tsne2,"kelio metodas, min_samples = 10",2.102,10,27,3.21
+tsne2,"kelio metodas, min_samples = 20",3.008,20,18,2.73
+tsne2,didžiausias siluetas,2.102,20,53,17.766
+tsne2,didžiausias CH,2.102,20,53,17.766
+tsne2,mažiausias DB,2.102,20,53,17.766
+tsne2,"k = 5 (tiek, kiek klasių)",4.435,10,5,0.0
+tsne3,"kelio metodas, min_samples = 5",1.146,5,38,2.71
+tsne3,"kelio metodas, min_samples = 10",1.55,10,18,1.55
+tsne3,"kelio metodas, min_samples = 20",2.054,20,9,1.34
+tsne3,didžiausias siluetas,0.775,5,200,18.139
+tsne3,didžiausias CH,0.775,5,200,18.139
+tsne3,mažiausias DB,0.775,5,200,18.139
+tsne3,"k = 5 (tiek, kiek klasių)",1.984,10,5,0.19
+tsne5,"kelio metodas, min_samples = 5",0.922,5,46,4.55
+tsne5,"kelio metodas, min_samples = 10",1.279,10,9,1.68
+tsne5,"kelio metodas, min_samples = 20",1.762,20,3,0.58
+tsne5,didžiausias siluetas,0.639,5,198,23.868
+tsne5,didžiausias CH,0.639,5,198,23.868
+tsne5,mažiausias DB,1.599,5,2,0.0
+tsne5,"k = 5 (tiek, kiek klasių)",1.356,10,5,1.01
