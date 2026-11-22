@@ -16,6 +16,8 @@ PROFILE_DIR = OUTPUT_DIR / "profiliai"
 UNITS = {"RR_sant_vid": "", "RR_pre": "ms", "RR_sant_post": "", "QRS": "ms", "QTc": "ms"}
 CLASS_COLOURS = dict(zip(CLASSES, PALETTE))
 TOP_N = 3
+SUMMARY_SPACES = ["originali", "pca2", "tsne3"]
+CLASS_COLOURS_V2 = {"N": "#4c72b0", "L": "#dd8452", "R": "#55a868", "V": "#c44e52", "A": "#8172b3"}
 
 
 def run_title(run):
@@ -117,6 +119,47 @@ def plot_composition(data, labels, variant):
     save_figure(fig, f"profiliai_klases_{variant}.png")
 
 
+def plot_composition_v2(data, labels, variant="kelio"):
+    runs = [f"{space}_{variant}" for space in SUMMARY_SPACES if f"{space}_{variant}" in labels]
+    tables = []
+    for run in runs:
+        table = pd.crosstab(labels[run], data[CLASS_COLUMN], normalize="index")
+        table = table.reindex(columns=CLASSES, fill_value=0) * 100
+        sizes = labels[run].value_counts()
+        clusters = sorted([c for c in table.index if c != NOISE], key=lambda c: -sizes[c])
+        if NOISE in table.index:
+            clusters.append(NOISE)
+        tables.append((run, table.loc[clusters], sizes))
+
+    fig, axes = plt.subplots(len(runs), 1, figsize=(10, 0.32 * sum(len(t) for _, t, _ in tables) + 2.2),
+                             sharex=True, gridspec_kw={"height_ratios": [len(t) for _, t, _ in tables]})
+    for ax, (run, table, sizes) in zip(np.atleast_1d(axes), tables):
+        positions = np.arange(len(table))
+        left = np.zeros(len(table))
+        for name in CLASSES:
+            values = table[name].to_numpy()
+            ax.barh(positions, values, left=left, height=0.7, color=CLASS_COLOURS_V2[name],
+                    edgecolor="white", linewidth=0.6, label=name)
+            left += values
+        ax.set_yticks(positions)
+        ax.set_yticklabels([f"{'triukšmas' if c == NOISE else c} ({sizes[c]})" for c in table.index],
+                           fontsize=8)
+        ax.set_ylim(len(table) - 0.5, -0.5)
+        ax.set_xlim(0, 100)
+        ax.set_title(SPACE_NAMES[run.rsplit("_", 1)[0]], fontsize=10, loc="left")
+        ax.spines[["top", "right"]].set_visible(False)
+        ax.grid(alpha=0.25, axis="x")
+        ax.set_axisbelow(True)
+    np.atleast_1d(axes)[-1].set_xlabel("Dūžių klasių dalis klasteryje, %")
+    handles, names = np.atleast_1d(axes)[0].get_legend_handles_labels()
+    fig.suptitle(f"DBSCAN klasterių ir triukšmo sudėtis pagal dūžių klases ({VARIANTS[variant]})",
+                 fontsize=12)
+    fig.tight_layout(rect=(0, 0, 0.88, 1))
+    fig.legend(handles, names, title="Klasė", frameon=False, loc="upper left",
+               bbox_to_anchor=(0.88, 0.95))
+    save_figure(fig, f"profiliai_klases_{variant}_v2.png")
+
+
 def plot_features(data, labels, run):
     clusters = sorted(labels[run].unique())
     colours = [NOISE_COLOUR if c == NOISE else PALETTE[c % len(PALETTE)] for c in clusters]
@@ -172,6 +215,7 @@ def main():
 
     for variant in VARIANTS:
         plot_composition(data, labels, variant)
+    plot_composition_v2(data, labels)
     for variant in VARIANTS:
         plot_features(data, labels, f"originali_{variant}")
     print("Išsaugota: rezultatai/dbscan/profiliai/profiliai.csv, klases_klasteriuose.csv, "
