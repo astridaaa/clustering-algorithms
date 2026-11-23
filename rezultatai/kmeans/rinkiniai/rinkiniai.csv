@@ -1,0 +1,4 @@
+rinkinys,pozymiai,k,silhouette,ch,db,ari_su_visais,nmi_su_visais,jaccard_su_visais,NMI_klase,NMI_ritmas,NMI_irasas
+visi,"RR_sant_vid, RR_pre, RR_sant_post, QRS, QTc",3,0.4642,2937.0497,0.8208,1.0,1.0,1.0,0.258,0.1134,0.1125
+ritmo,"RR_sant_vid, RR_pre, RR_sant_post",3,0.599,4778.6752,0.6399,0.9666,0.9288,0.9734,0.2579,0.1135,0.1133
+formos,"QRS, QTc",2,0.3866,3697.8799,1.0169,0.1131,0.1009,0.4336,0.1155,0.0376,0.0843
