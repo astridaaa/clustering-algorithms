@@ -1,5 +1,5 @@
 from dbscan_common import (ALGORITHM, MIN_SAMPLES, OUTPUT_DIR, PALETTE,
-                           SPACE_NAMES, SPACES, STABILITY_SPACE, VARIANTS,
+                           SPACE_NAMES, SPACES, STABILITY_SPACES, TARGET_K, VARIANTS,
                            align_labels, background_map, cluster_sizes, fit_dbscan,
                            load, load_chosen, params, plot_clusters, plot_point_types,
                            point_types, save_figure, subsample_runs)
@@ -56,8 +56,9 @@ def evaluate_run(space, variant, eps, X_original, reference):
         crosstab.to_csv(FINAL_DIR / f"kryzmine_{name}.csv")
 
     stability_pairs = stability_samples = by_n = None
-    if space == STABILITY_SPACE:
-        stability_pairs, stability_samples = ev.stability(subsample_runs(space, eps, MIN_SAMPLES))
+    if space in STABILITY_SPACES:
+        stability_pairs, stability_samples = ev.stability(
+            subsample_runs(STABILITY_SPACES[space], eps, MIN_SAMPLES))
         by_n = ev.stability_vs_n(stability_pairs).assign(suskirstymas=name)
         stability_pairs = stability_pairs.assign(suskirstymas=name)
 
@@ -126,18 +127,24 @@ def plot_types(results, background):
 
 def plot_stability(stability_pairs, by_n):
     names = list(dict.fromkeys(stability_pairs["suskirstymas"]))
+    variant_names = {"kelio": "kelio metodas", **{name: f"{k} klasteriai" for name, k in TARGET_K.items()}}
+
+    def label(name, sep="\n"):
+        space, variant = name.rsplit("_", 1)
+        return f"{SPACE_NAMES[space]}{sep}{variant_names[variant]}"
+
     fig, (left, right) = plt.subplots(1, 2, figsize=(14, 5))
     left.boxplot([stability_pairs.loc[stability_pairs["suskirstymas"] == name, "ari"]
-                  for name in names], tick_labels=names,
+                  for name in names], tick_labels=[label(name) for name in names],
                  medianprops={"color": "#0b0b0b"})
     left.set_ylabel("ARI tarp imčių porų")
-    left.set_title("Stabilumas pradinėje erdvėje: ARI per 80 % imčių poras")
+    left.set_title("Stabilumas: ARI per 80 % imčių poras")
     left.grid(alpha=0.3, axis="y")
 
     for colour, name in zip(PALETTE, names):
         data = by_n[by_n["suskirstymas"] == name]
         right.errorbar(data["N"], data["vidurkis"], yerr=data["sn"], fmt="o-", capsize=3,
-                       color=colour, label=name)
+                       color=colour, label=label(name, ", "))
     right.set_xticks([5, 10, 15, 20])
     right.set_xlabel("Imčių skaičius N")
     right.set_ylabel("ARI vidurkis ± SN")
@@ -191,7 +198,7 @@ def main():
     print(table[["suskirstymas", "eps", "k", "triuksmo_dalis_%", "silhouette",
                  "silhouette_orig", "ari", "nmi", "jaccard", "sutampa_tasku",
                  "klasteriu_dydziai"]].round(3).to_string(index=False))
-    print("\nStabilumas (tik pradinė erdvė):")
+    print("\nStabilumas (pradinė erdvė, PCA 3D ir t-SNE 2D):")
     print(table.dropna(subset=["stab_ari"])[["suskirstymas", "stab_ari", "stab_nmi",
                                              "stab_jaccard", "imciu_k",
                                              "imciu_triuksmas_%"]].to_string(index=False))

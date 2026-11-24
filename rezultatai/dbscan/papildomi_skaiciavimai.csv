@@ -1,0 +1,17 @@
+poskyris,rodiklis,reiksme
+4,"Eps, kai už Eps_k atsiranda papildomas klasteris",1.207
+4,mažiausio klasterio dydis,10.0
+4,"iš jų triukšmas, kai Eps = Eps_k",10.0
+6.1,klasterį pakeitusių objektų,28.0
+6.1,triukšmas -> klasteris,25.0
+6.1,klasteris -> triukšmas,3.0
+6.1,ARI be triukšmo objektų,1.0
+5.3,k-vidurkių klasteris 0 (3559): daugiausia DBSCAN klasteryje 0 (3071),3064.0
+5.3,k-vidurkių klasteris 1 (1132): daugiausia DBSCAN klasteryje 3 (1208),1127.0
+5.3,k-vidurkių klasteris 2 (144): daugiausia DBSCAN klasteryje 1 (293),142.0
+5.3,"ARI tarp k-vidurkių (pradinė, k = 3) ir DBSCAN (t-SNE 2D, 5 kl.)",0.7061232513313898
+7.3,grupės PC3 mažiausia reikšmė,2.1336789419031206
+7.3,grupės PC3 didžiausia reikšmė,2.8467903343601817
+7.3,kitų objektų PC3 99-asis procentilis,1.612548066249989
+7.3,pca3: mažiausias atstumas tarp grupės ir kitų branduolinių objektų (Eps = 0.781),1.0825605995520646
+7.3,pca2: mažiausias atstumas tarp grupės ir kitų branduolinių objektų (Eps = 0.493),0.01009141489191093
