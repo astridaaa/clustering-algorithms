@@ -35,7 +35,10 @@ VARIANTS = {"kelio": "eps kelio metodu",
                for name, k in TARGET_K.items()}}
 MAX_NOISE = 0.5
 
-# Stabilumas tikrinamas tik pradinėje erdvėje.
+# Galutinių suskirstymų stabilumas: erdvė -> paruoštų 80 % imčių rinkinys
+# (data/paruosta/stabilumas/: pca – 3 komponentės, tsne – 2D, kaip pasirinktos DBSCAN erdvės).
+STABILITY_SPACES = {"originali": "originali", "pca3": "pca", "tsne2": "tsne"}
+# Parametrų tinklelio (dbscan_params.py) stabilumas – tik pradinėje erdvėje.
 STABILITY_SPACE = "originali"
 
 PALETTE = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"]
